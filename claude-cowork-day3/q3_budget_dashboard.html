@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q3/2569 Budget Planning Dashboard</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-[var(--border)]">
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-semibold tracking-tight">งบประมาณ Q3/2569 — ABC Tech</h1>
+          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--secondary)] text-[var(--secondary-foreground)] border border-[var(--border)]">
+            ฉบับร่าง v2
+          </span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)] mt-1">
+          แหล่งข้อมูล: Google Drive (<span class="font-mono">Q3_Budget_Draft_v2.xlsx</span> &amp; <span class="font-mono">04_financial_statement_q1q4.csv</span>) • ดึงข้อมูลเมื่อ 27 พ.ย. 2026 เวลา 01:51 น.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]">
+          <span class="w-2 h-2 rounded-full bg-[var(--warning)]"></span>
+          สถานะ: รออนุมัติจาก CFO
+        </span>
+      </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-1">
+        <div class="text-xs text-[var(--muted-foreground)]">งบรวม Q3 เสนอ</div>
+        <div class="text-2xl font-semibold tabular-nums">5,620,000 ฿</div>
+        <div class="text-xs text-[var(--muted-foreground)]">เทียบ Q2 จริง 4,670,000 ฿</div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-1">
+        <div class="text-xs text-[var(--muted-foreground)]">% เพิ่มจาก Q2</div>
+        <div class="text-2xl font-semibold tabular-nums text-[var(--warning)]">+20.3%</div>
+        <div class="text-xs text-[var(--muted-foreground)]">เพิ่มขึ้น +950,000 ฿</div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-1">
+        <div class="text-xs text-[var(--muted-foreground)]">หมวดที่โตเร็วสุด</div>
+        <div class="text-xl font-semibold truncate">สำรองฉุกเฉิน</div>
+        <div class="text-xs text-[var(--success)] font-medium">+50.0% (200k → 300k ฿)</div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-1">
+        <div class="text-xs text-[var(--muted-foreground)]">แผนกงบสูงสุด</div>
+        <div class="text-xl font-semibold truncate">ฝ่ายขาย (Sales)</div>
+        <div class="text-xs text-[var(--muted-foreground)]">1,850,000 ฿ (33% • คุณวิภา)</div>
+      </div>
+    </section>
+
+    <!-- Charts Row 1: Q2 vs Q3 + Dept Donut -->
+    <section class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <!-- Grouped Bar Chart: Q2 vs Q3 -->
+      <div class="lg:col-span-3 p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-col">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm font-semibold">เปรียบเทียบงบประมาณ Q2 vs Q3 ตามหมวด</h2>
+            <p class="text-xs text-[var(--muted-foreground)]">หน่วย: ล้านบาท (ชี้เมาส์เพื่อดูยอดละเอียด)</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--chart-2)"></span> Q2 จริง
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--chart-1)"></span> Q3 เสนอ
+            </span>
+          </div>
+        </div>
+        <div class="relative flex-1 min-h-[260px]">
+          <canvas id="barChart" class="w-full h-[260px]"></canvas>
+          <div id="barTooltip" class="hidden pointer-events-none absolute z-10 px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs shadow-md"></div>
+        </div>
+      </div>
+
+      <!-- Donut Chart: By Department -->
+      <div class="lg:col-span-2 p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-col">
+        <div class="mb-3">
+          <h2 class="text-sm font-semibold">สัดส่วนงบ Q3 แยกตามแผนก</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">รวม 5 แผนก (5,620,000 บาท)</p>
+        </div>
+        <div class="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center gap-4 flex-1 justify-center">
+          <div class="relative w-[180px] h-[180px] shrink-0">
+            <canvas id="donutChart" class="w-[180px] h-[180px]"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span class="text-xs text-[var(--muted-foreground)]">รวม Q3</span>
+              <span class="text-sm font-semibold tabular-nums">5.62M ฿</span>
+            </div>
+            <div id="donutTooltip" class="hidden pointer-events-none absolute z-10 px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs shadow-md whitespace-nowrap"></div>
+          </div>
+          <ul id="donutLegend" class="space-y-1.5 text-xs w-full"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Budget vs Actual Revenue Section (from 04_financial_statement_q1q4.csv) -->
+    <section class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h2 class="text-sm font-semibold">เทียบงบประมาณกับรายได้จริง (Financial Statement 2025)</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">เปรียบเทียบรายได้จริง Q1–Q4 2025 กับงบประมาณ Q2 จริง (4.67M) และ Q3 เสนอ (5.62M)</p>
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--chart-3)"></span> รายได้จริง (Revenue)
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--chart-1)"></span> งบประมาณ (Budget)
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--chart-4)"></span> กำไรสุทธิ (Net Income)
+          </span>
+        </div>
+      </div>
+
+      <!-- Revenue vs Budget Mini KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">รายได้จริง Q3 2025 (ฐานเทียบ)</div>
+          <div class="text-lg font-semibold tabular-nums mt-0.5">6,100,000 ฿</div>
+          <div class="text-xs text-[var(--success)]">+17.3% จาก Q2 2025 (5,200,000 ฿)</div>
+        </div>
+        <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">สัดส่วนงบ Q3 ต่อรายได้จริง Q3</div>
+          <div class="text-lg font-semibold tabular-nums mt-0.5 text-[var(--warning)]">92.1%</div>
+          <div class="text-xs text-[var(--muted-foreground)]">เทียบ Q2: 89.8% (4.67M / 5.20M)</div>
+        </div>
+        <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">ส่วนต่างรายได้ Q3 หักงบเสนอ</div>
+          <div class="text-lg font-semibold tabular-nums mt-0.5">+480,000 ฿</div>
+          <div class="text-xs text-[var(--muted-foreground)]">กำไรสุทธิจริง Q3 2025: 1,045,000 ฿</div>
+        </div>
+      </div>
+
+      <div class="relative min-h-[240px]">
+        <canvas id="revChart" class="w-full h-[240px]"></canvas>
+        <div id="revTooltip" class="hidden pointer-events-none absolute z-10 px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs shadow-md"></div>
+      </div>
+    </section>
+
+    <!-- Sortable Table -->
+    <section class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="text-sm font-semibold">ตารางรายละเอียดงบประมาณ</h2>
+          <div class="inline-flex rounded-lg bg-[var(--background)] p-0.5 border border-[var(--border)] text-xs">
+            <button id="tabCat" class="px-2.5 py-1 rounded-md font-medium bg-[var(--primary)] text-[var(--primary-foreground)]">ตามหมวด (6)</button>
+            <button id="tabDept" class="px-2.5 py-1 rounded-md font-medium text-[var(--muted-foreground)]">ตามแผนก (5)</button>
+            <button id="tabFin" class="px-2.5 py-1 rounded-md font-medium text-[var(--muted-foreground)]">งบ vs รายได้จริง (Q1–Q4)</button>
+          </div>
+        </div>
+        <input id="searchBox" type="text" placeholder="ค้นหาหมวด / แผนก / ไตรมาส..."
+          class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs w-full sm:w-64 focus:outline-none focus:border-[var(--primary)]" />
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead id="tableHead" class="border-b border-[var(--border)] text-[var(--muted-foreground)]"></thead>
+          <tbody id="tableBody" class="divide-y divide-[var(--border)]"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const categories = [
+      { name: "เงินเดือน & สวัสดิการ", q2: 2400000, q3: 2760000, note: "เพิ่ม Sales 1, Dev 1" },
+      { name: "การตลาด & โฆษณา", q2: 850000, q3: 1100000, note: "แคมเปญเปิดตัวสินค้าใหม่ (CFO ขอลด Influencer 10%)" },
+      { name: "เทคโนโลยี & ระบบ", q2: 620000, q3: 780000, note: "ค่า Cloud + License AI" },
+      { name: "ค่าดำเนินงานสำนักงาน", q2: 420000, q3: 430000, note: "คงที่" },
+      { name: "สำรองฉุกเฉิน", q2: 200000, q3: 300000, note: "เผื่อความเสี่ยง Q3" },
+      { name: "ฝึกอบรมพนักงาน", q2: 180000, q3: 250000, note: "อบรม AI & Data ทั้งทีม" }
+    ].map(r => ({
+      ...r,
+      diff: r.q3 - r.q2,
+      pct: ((r.q3 - r.q2) / r.q2) * 100
+    }));
+
+    const departments = [
+      { name: "ฝ่ายขาย (Sales)", q3: 1850000, share: 33, owner: "คุณวิภา", status: "รออนุมัติ (ขอดูเป้ารายได้)" },
+      { name: "ฝ่ายเทคโนโลยี (Tech)", q3: 1450000, share: 26, owner: "คุณธนา", status: "อนุมัติแล้ว" },
+      { name: "ฝ่ายการตลาด (Marketing)", q3: 1300000, share: 23, owner: "คุณนภา", status: "อนุมัติเบื้องต้น (-10% Influencer)" },
+      { name: "ฝ่ายปฏิบัติการ (Operations)", q3: 620000, share: 11, owner: "คุณสมชาย", status: "ตามแผน" },
+      { name: "ฝ่ายบุคคล (HR)", q3: 400000, share: 7, owner: "คุณพิม", status: "อนุมัติแล้ว (ฝึกอบรม)" }
+    ];
+
+    const financials = [
+      { quarter: "Q1 2025", revenue: 4500000, grossProfit: 1800000, opex: 900000, netIncome: 624000, budget: null, ratio: null },
+      { quarter: "Q2 2025", revenue: 5200000, grossProfit: 2100000, opex: 980000, netIncome: 800000, budget: 4670000, ratio: (4670000 / 5200000) * 100 },
+      { quarter: "Q3 2025", revenue: 6100000, grossProfit: 2500000, opex: 1050000, netIncome: 1045000, budget: 5620000, ratio: (5620000 / 6100000) * 100 },
+      { quarter: "Q4 2025", revenue: 7800000, grossProfit: 3300000, opex: 1200000, netIncome: 1540000, budget: null, ratio: null }
+    ];
+
+    const fmt = n => n == null ? "—" : n.toLocaleString("th-TH");
+    const getVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    let barHitboxes = [];
+    let donutSlices = [];
+    let revHitboxes = [];
+
+    function drawBarChart() {
+      const canvas = document.getElementById("barChart");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width, h = rect.height;
+      const pad = { top: 16, right: 16, bottom: 44, left: 48 };
+      const cw = w - pad.left - pad.right;
+      const ch = h - pad.top - pad.bottom;
+
+      const fg = getVar("--foreground") || "#e5e7eb";
+      const muted = getVar("--muted-foreground") || "#9ca3af";
+      const border = getVar("--border") || "#374151";
+      const cQ2 = getVar("--chart-2") || "#60a5fa";
+      const cQ3 = getVar("--chart-1") || "#34d399";
+
+      const maxVal = 3000000;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 3; i++) {
+        const val = (maxVal / 3) * i;
+        const y = pad.top + ch - (val / maxVal) * ch;
+        ctx.strokeStyle = border;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(w - pad.right, y);
+        ctx.stroke();
+        ctx.fillStyle = muted;
+        ctx.fillText((val / 1000000).toFixed(1) + "M", pad.left - 8, y);
+      }
+
+      const groupW = cw / categories.length;
+      const barW = Math.min(24, groupW * 0.28);
+      const gap = 4;
+      barHitboxes = [];
+
+      categories.forEach((cat, idx) => {
+        const cx = pad.left + groupW * idx + groupW / 2;
+        const h2 = (cat.q2 / maxVal) * ch;
+        const h3 = (cat.q3 / maxVal) * ch;
+        ctx.fillStyle = cQ2;
+        ctx.fillRect(cx - barW - gap / 2, pad.top + ch - h2, barW, h2);
+        ctx.fillStyle = cQ3;
+        ctx.fillRect(cx + gap / 2, pad.top + ch - h3, barW, h3);
+
+        barHitboxes.push({ x: cx - groupW / 2, y: pad.top, w: groupW, h: ch, cat });
+
+        ctx.fillStyle = fg;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(cat.name.split(" ")[0].replace("&", ""), cx, pad.top + ch + 8);
+      });
+    }
+
+    function drawDonutChart() {
+      const canvas = document.getElementById("donutChart");
+      const dpr = window.devicePixelRatio || 1;
+      const size = 180;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const colors = [
+        getVar("--chart-1") || "#34d399",
+        getVar("--chart-2") || "#60a5fa",
+        getVar("--chart-3") || "#fbbf24",
+        getVar("--chart-4") || "#a78bfa",
+        getVar("--chart-5") || "#f87171"
+      ];
+      const bg = getVar("--card") || "#1f2937";
+      const total = departments.reduce((s, d) => s + d.q3, 0);
+      const cx = size / 2, cy = size / 2, rOut = 82, rIn = 52;
+
+      let start = -Math.PI / 2;
+      donutSlices = [];
+      ctx.clearRect(0, 0, size, size);
+
+      departments.forEach((d, i) => {
+        const angle = (d.q3 / total) * Math.PI * 2;
+        const end = start + angle;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, rOut, start, end);
+        ctx.closePath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = bg;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        donutSlices.push({ start, end, dept: d });
+        start = end;
+      });
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, rIn, 0, Math.PI * 2);
+      ctx.fillStyle = bg;
+      ctx.fill();
+
+      document.getElementById("donutLegend").innerHTML = departments.map((d, i) => `
+        <li class="flex items-center justify-between gap-2">
+          <span class="flex items-center gap-2 truncate">
+            <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background:${colors[i % colors.length]}"></span>
+            <span class="truncate">${d.name}</span>
+          </span>
+          <span class="font-mono tabular-nums text-[var(--muted-foreground)] shrink-0">${d.share}%</span>
+        </li>
+      `).join("");
+    }
+
+    function drawRevChart() {
+      const canvas = document.getElementById("revChart");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width, h = rect.height;
+      const pad = { top: 16, right: 20, bottom: 36, left: 52 };
+      const cw = w - pad.left - pad.right;
+      const ch = h - pad.top - pad.bottom;
+
+      const fg = getVar("--foreground") || "#e5e7eb";
+      const muted = getVar("--muted-foreground") || "#9ca3af";
+      const border = getVar("--border") || "#374151";
+      const cRev = getVar("--chart-3") || "#fbbf24";
+      const cBud = getVar("--chart-1") || "#34d399";
+      const cNet = getVar("--chart-4") || "#a78bfa";
+
+      const maxVal = 8000000;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 4; i++) {
+        const val = (maxVal / 4) * i;
+        const y = pad.top + ch - (val / maxVal) * ch;
+        ctx.strokeStyle = border;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(w - pad.right, y);
+        ctx.stroke();
+        ctx.fillStyle = muted;
+        ctx.fillText((val / 1000000).toFixed(1) + "M", pad.left - 8, y);
+      }
+
+      const groupW = cw / financials.length;
+      const barW = Math.min(28, groupW * 0.22);
+      const gap = 5;
+      revHitboxes = [];
+
+      financials.forEach((f, idx) => {
+        const cx = pad.left + groupW * idx + groupW / 2;
+        const hasBudget = f.budget != null;
+        const bars = hasBudget
+          ? [
+              { val: f.revenue, color: cRev },
+              { val: f.budget, color: cBud },
+              { val: f.netIncome, color: cNet }
+            ]
+          : [
+              { val: f.revenue, color: cRev },
+              { val: f.netIncome, color: cNet }
+            ];
+        const totalW = bars.length * barW + (bars.length - 1) * gap;
+        let x = cx - totalW / 2;
+        bars.forEach(b => {
+          const bh = (b.val / maxVal) * ch;
+          ctx.fillStyle = b.color;
+          ctx.fillRect(x, pad.top + ch - bh, barW, bh);
+          x += barW + gap;
+        });
+
+        revHitboxes.push({ x: cx - groupW / 2, y: pad.top, w: groupW, h: ch, fin: f });
+
+        ctx.fillStyle = fg;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(f.quarter, cx, pad.top + ch + 8);
+      });
+    }
+
+    // Tooltips
+    const barCanvas = document.getElementById("barChart");
+    const barTip = document.getElementById("barTooltip");
+    barCanvas.addEventListener("mousemove", e => {
+      const r = barCanvas.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const hit = barHitboxes.find(b => x >= b.x && x <= b.x + b.w);
+      if (!hit) { barTip.classList.add("hidden"); return; }
+      const c = hit.cat;
+      barTip.innerHTML = `
+        <div class="font-semibold mb-1">${c.name}</div>
+        <div>Q2 จริง: <span class="font-mono">${fmt(c.q2)} ฿</span></div>
+        <div>Q3 เสนอ: <span class="font-mono">${fmt(c.q3)} ฿</span> (+${c.pct.toFixed(1)}%)</div>
+      `;
+      barTip.style.left = Math.min(r.width - 190, Math.max(8, x - 60)) + "px";
+      barTip.style.top = "8px";
+      barTip.classList.remove("hidden");
+    });
+    barCanvas.addEventListener("mouseleave", () => barTip.classList.add("hidden"));
+
+    const donutCanvas = document.getElementById("donutChart");
+    const donutTip = document.getElementById("donutTooltip");
+    donutCanvas.addEventListener("mousemove", e => {
+      const r = donutCanvas.getBoundingClientRect();
+      const dx = e.clientX - r.left - 90;
+      const dy = e.clientY - r.top - 90;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 52 || dist > 82) { donutTip.classList.add("hidden"); return; }
+      let ang = Math.atan2(dy, dx);
+      if (ang < -Math.PI / 2) ang += Math.PI * 2;
+      const slice = donutSlices.find(s => ang >= s.start && ang <= s.end);
+      if (!slice) { donutTip.classList.add("hidden"); return; }
+      donutTip.innerHTML = `<div class="font-semibold">${slice.dept.name}</div><div>${fmt(slice.dept.q3)} ฿ (${slice.dept.share}%)</div>`;
+      donutTip.style.left = "50%";
+      donutTip.style.top = "-8px";
+      donutTip.style.transform = "translateX(-50%)";
+      donutTip.classList.remove("hidden");
+    });
+    donutCanvas.addEventListener("mouseleave", () => donutTip.classList.add("hidden"));
+
+    const revCanvas = document.getElementById("revChart");
+    const revTip = document.getElementById("revTooltip");
+    revCanvas.addEventListener("mousemove", e => {
+      const r = revCanvas.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const hit = revHitboxes.find(b => x >= b.x && x <= b.x + b.w);
+      if (!hit) { revTip.classList.add("hidden"); return; }
+      const f = hit.fin;
+      revTip.innerHTML = `
+        <div class="font-semibold mb-1">${f.quarter}</div>
+        <div>รายได้จริง: <span class="font-mono">${fmt(f.revenue)} ฿</span></div>
+        <div>งบประมาณ: <span class="font-mono">${f.budget != null ? fmt(f.budget) + " ฿ (" + f.ratio.toFixed(1) + "%)" : "ไม่มีข้อมูลในไฟล์งบ"}</span></div>
+        <div>กำไรสุทธิ: <span class="font-mono">${fmt(f.netIncome)} ฿</span></div>
+      `;
+      revTip.style.left = Math.min(r.width - 210, Math.max(8, x - 70)) + "px";
+      revTip.style.top = "8px";
+      revTip.classList.remove("hidden");
+    });
+    revCanvas.addEventListener("mouseleave", () => revTip.classList.add("hidden"));
+
+    // Sortable Table
+    let activeTab = "cat";
+    let sortCol = "q3";
+    let sortDir = "desc";
+    let searchTerm = "";
+
+    const catCols = [
+      { key: "name", label: "หมวดงบประมาณ", align: "left" },
+      { key: "q2", label: "Q2 จริง (บาท)", align: "right" },
+      { key: "q3", label: "Q3 เสนอ (บาท)", align: "right" },
+      { key: "diff", label: "ส่วนต่าง (บาท)", align: "right" },
+      { key: "pct", label: "เปลี่ยนแปลง", align: "right" },
+      { key: "note", label: "หมายเหตุ", align: "left" }
+    ];
+
+    const deptCols = [
+      { key: "name", label: "แผนก", align: "left" },
+      { key: "q3", label: "งบ Q3 (บาท)", align: "right" },
+      { key: "share", label: "สัดส่วน (%)", align: "right" },
+      { key: "owner", label: "ผู้รับผิดชอบ", align: "left" },
+      { key: "status", label: "สถานะล่าสุด", align: "left" }
+    ];
+
+    const finCols = [
+      { key: "quarter", label: "ไตรมาส", align: "left" },
+      { key: "revenue", label: "รายได้จริง (บาท)", align: "right" },
+      { key: "budget", label: "งบประมาณ (บาท)", align: "right" },
+      { key: "ratio", label: "งบ / รายได้ (%)", align: "right" },
+      { key: "grossProfit", label: "กำไรขั้นต้น (บาท)", align: "right" },
+      { key: "netIncome", label: "กำไรสุทธิ (บาท)", align: "right" }
+    ];
+
+    function renderTable() {
+      const cols = activeTab === "cat" ? catCols : activeTab === "dept" ? deptCols : finCols;
+      const source = activeTab === "cat" ? categories : activeTab === "dept" ? departments : financials;
+      const rows = source.filter(r =>
+        Object.values(r).some(v => v != null && String(v).toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+
+      rows.sort((a, b) => {
+        const av = a[sortCol] ?? -1, bv = b[sortCol] ?? -1;
+        const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv), "th");
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+
+      document.getElementById("tableHead").innerHTML = `<tr>${
+        cols.map(c => {
+          const arrow = sortCol === c.key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+          return `<th data-col="${c.key}" class="py-2 px-2 font-medium cursor-pointer select-none hover:text-[var(--foreground)] ${c.align === "right" ? "text-right" : "text-left"}">${c.label}${arrow}</th>`;
+        }).join("")
+      }</tr>`;
+
+      document.querySelectorAll("#tableHead th").forEach(th => {
+        th.onclick = () => {
+          const col = th.dataset.col;
+          if (sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+          else { sortCol = col; sortDir = typeof rows[0]?.[col] === "number" ? "desc" : "asc"; }
+          renderTable();
+        };
+      });
+
+      document.getElementById("tableBody").innerHTML = rows.map(r => {
+        if (activeTab === "cat") {
+          return `<tr class="hover:bg-[var(--background)]/50">
+            <td class="py-2.5 px-2 font-medium">${r.name}</td>
+            <td class="py-2.5 px-2 text-right font-mono tabular-nums">${fmt(r.q2)}</td>
+            <td class="py-2.5 px-2 text-right font-mono tabular-nums font-medium">${fmt(r.q3)}</td>
+            <td class="py-2.5 px-2 text-right font-mono tabular-nums text-[var(--success)]">+${fmt(r.diff)}</td>
+            <td class="py-2.5 px-2 text-right font-mono tabular-nums">+${r.pct.toFixed(1)}%</td>
+            <td class="py-2.5 px-2 text-[var(--muted-foreground)]">${r.note}</td>
+          </tr>`;
+        }
+        if (activeTab === "dept") {
+          return `<tr class="hover:bg-[var(--background)]/50">
+            <td class="py-2.5 px-2 font-medium">${r.name}</td>
+            <td class="py-2.5 px-2 text-right font-mono tabular-nums font-medium">${fmt(r.q3)}</td>
+            <td class="py-2.5 px-2 text-right font-mono tabular-nums">${r.share}%</td>
+            <td class="py-2.5 px-2">${r.owner}</td>
+            <td class="py-2.5 px-2 text-[var(--muted-foreground)]">${r.status}</td>
+          </tr>`;
+        }
+        return `<tr class="hover:bg-[var(--background)]/50">
+          <td class="py-2.5 px-2 font-medium">${r.quarter}</td>
+          <td class="py-2.5 px-2 text-right font-mono tabular-nums font-medium">${fmt(r.revenue)}</td>
+          <td class="py-2.5 px-2 text-right font-mono tabular-nums">${fmt(r.budget)}</td>
+          <td class="py-2.5 px-2 text-right font-mono tabular-nums">${r.ratio != null ? r.ratio.toFixed(1) + "%" : "—"}</td>
+          <td class="py-2.5 px-2 text-right font-mono tabular-nums">${fmt(r.grossProfit)}</td>
+          <td class="py-2.5 px-2 text-right font-mono tabular-nums text-[var(--success)]">${fmt(r.netIncome)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function setTab(tab, defaultSort) {
+      activeTab = tab; sortCol = defaultSort; sortDir = tab === "fin" ? "asc" : "desc";
+      const activeCls = "px-2.5 py-1 rounded-md font-medium bg-[var(--primary)] text-[var(--primary-foreground)]";
+      const idleCls = "px-2.5 py-1 rounded-md font-medium text-[var(--muted-foreground)]";
+      document.getElementById("tabCat").className = tab === "cat" ? activeCls : idleCls;
+      document.getElementById("tabDept").className = tab === "dept" ? activeCls : idleCls;
+      document.getElementById("tabFin").className = tab === "fin" ? activeCls : idleCls;
+      renderTable();
+    }
+
+    document.getElementById("tabCat").onclick = () => setTab("cat", "q3");
+    document.getElementById("tabDept").onclick = () => setTab("dept", "q3");
+    document.getElementById("tabFin").onclick = () => setTab("fin", "quarter");
+    document.getElementById("searchBox").oninput = e => { searchTerm = e.target.value; renderTable(); };
+
+    function drawAll() { drawBarChart(); drawDonutChart(); drawRevChart(); }
+    window.addEventListener("resize", drawAll);
+    window.addEventListener("themechange", drawAll);
+    drawAll();
+    renderTable();
+  </script>
+</body>
+</html>
