@@ -1,0 +1,2 @@
+date,user,workflow_name,sources_used,output_file,reviewed,notes
+2026-11-27,Tanawat Yadjantuek,Daily Morning Briefing,"Google Calendar (2 events); Gmail (13 unread)",briefing_20261127.md,Yes,Initial manual test run verified permissions and output format
